@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "splitbrain"
+version = "0.1.0"
+description = "A distributed systems consistency analyzer and simulator"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+  {name = "SplitBrain Contributor"}
+]
+dependencies = [
+  "matplotlib>=3.7.0",
+  "pandas>=2.0.0",
+  "PyYAML>=6.0.1",
+  "click>=8.1.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0.0"
+]
+
+[project.scripts]
+splitbrain = "runner:cli"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-v --tb=short"
+testpaths = [
+    "tests",
+]
