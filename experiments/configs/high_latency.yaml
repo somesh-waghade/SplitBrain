@@ -1,0 +1,9 @@
+experiment: high_latency
+nodes: 3
+latency_base_ms: 150
+latency_jitter_ms: 50
+drop_rate: 0.0
+partition: false
+num_writes: 100
+num_reads: 100
+seed: 42

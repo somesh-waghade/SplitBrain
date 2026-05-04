@@ -1,0 +1,11 @@
+experiment: partition
+nodes: 5
+latency_base_ms: 30
+latency_jitter_ms: 5
+drop_rate: 0.0
+partition: true
+partition_at_ms: 500
+heal_at_ms: 2000
+num_writes: 200
+num_reads: 200
+seed: 42

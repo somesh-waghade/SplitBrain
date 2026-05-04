@@ -1,0 +1,9 @@
+experiment: packet_loss
+nodes: 3
+latency_base_ms: 30
+latency_jitter_ms: 10
+drop_rate: 0.2
+partition: false
+num_writes: 100
+num_reads: 100
+seed: 42
