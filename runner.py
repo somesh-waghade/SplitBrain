@@ -56,9 +56,11 @@ def run_simulation(config_path: str):
     if partition_enabled:
         
         def partition_cb(e):
-            # Isolate node1
+            # Isolate node1 from other nodes
             for n in node_ids[1:]:
                 network.add_partition("node1", n)
+            # Isolate node1 from coordinator
+            network.add_partition("node1", "coordinator")
             print(f"[{clock.current_time}ms] Partition isolated node1")
                 
         engine.schedule(Event(timestamp=partition_at, event_type=EventType.CLIENT_REQUEST, callback=partition_cb))

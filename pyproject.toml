@@ -27,6 +27,10 @@ dev = [
 [project.scripts]
 splitbrain = "runner:cli"
 
+[tool.setuptools.packages.find]
+include = ["splitbrain*"]
+exclude = ["experiments*"]
+
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-v --tb=short"

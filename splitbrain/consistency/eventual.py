@@ -11,12 +11,13 @@ class EventualConsistency:
     Writes require only 1 ACK. Reads contact 1 node (may be stale).
     Uses background gossip to propagate state.
     """
-    def __init__(self, engine: EventEngine, network: Network, nodes: List[Node], gossip_interval_ms: int = 100):
+    def __init__(self, engine: EventEngine, network: Network, nodes: List[Node], gossip_interval_ms: int = 100, timeout_ms: int = 2000):
         self.engine = engine
         self.network = network
         self.nodes = nodes
         self.node_ids = [n.node_id for n in nodes]
         self.gossip_interval_ms = gossip_interval_ms
+        self.timeout_ms = timeout_ms
         
         self.requests: Dict[str, Dict[str, Any]] = {}
         
@@ -34,6 +35,7 @@ class EventualConsistency:
         target_node = random.choice(self.node_ids)
         msg = Message(msg_id=req_id, src="coordinator", dst=target_node, msg_type=MessageType.READ_REQ, key=key)
         self.network.send(msg)
+        self._schedule_timeout(req_id)
 
     def write(self, key: str, value: Any, req_id: str, callback: Callable[[bool], None]) -> None:
         version = self.engine.clock.current_time
@@ -48,6 +50,7 @@ class EventualConsistency:
         target_node = random.choice(self.node_ids)
         msg = Message(msg_id=req_id, src="coordinator", dst=target_node, msg_type=MessageType.WRITE_REQ, key=key, value=value, version=version)
         self.network.send(msg)
+        self._schedule_timeout(req_id)
 
     def receive(self, message: Message) -> None:
         req_state = self.requests.get(message.msg_id)
@@ -61,6 +64,23 @@ class EventualConsistency:
         elif message.msg_type == MessageType.WRITE_ACK and req_state["type"] == "write":
             req_state["completed"] = True
             req_state["callback"](True)
+
+    def _schedule_timeout(self, req_id: str):
+        def timeout_callback(event: Event):
+            req_state = self.requests.get(req_id)
+            if req_state and not req_state["completed"]:
+                req_state["completed"] = True
+                if req_state["type"] == "read":
+                    req_state["callback"](None, False)
+                else:
+                    req_state["callback"](False)
+                    
+        event = Event(
+            timestamp=self.engine.clock.current_time + self.timeout_ms,
+            event_type=EventType.CLIENT_REQUEST,
+            callback=timeout_callback
+        )
+        self.engine.schedule(event)
 
     def _schedule_gossip_tick(self):
         """Schedule the next background gossip event."""

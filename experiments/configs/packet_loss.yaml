@@ -1,5 +1,5 @@
 experiment: packet_loss
-nodes: 3
+nodes: 10
 latency_base_ms: 30
 latency_jitter_ms: 10
 drop_rate: 0.2

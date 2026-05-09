@@ -1,4 +1,4 @@
-# 🧠⚖️ SplitBrain: Consistency Analyzer
+# SplitBrain: Consistency Analyzer
 
 **Simulating how distributed systems diverge and recover under partition.**
 
@@ -8,7 +8,7 @@ This project is designed as a **scientific experimentation tool**, not a product
 
 ---
 
-## 🚀 Overview
+## Overview
 
 In distributed systems, a *split-brain* scenario occurs when network partitions cause nodes to diverge in state. This project simulates exactly that behavior and measures how different consistency models handle it.
 
@@ -20,7 +20,7 @@ SplitBrain implements a replicated key-value store across multiple nodes and eva
 
 ---
 
-## 🧱 System Architecture
+## System Architecture
 
 ```text
 Client Requests
@@ -32,7 +32,7 @@ Client Requests
  Replica Nodes (3+)
 ```
 
-## ⚙️ Core Components
+## Core Components
 
 * **Node**: Stores key-value data, processes incoming messages.
 * **Coordinator**: Handles client requests, applies consistency logic.
@@ -42,7 +42,7 @@ Client Requests
 
 ---
 
-## 🔬 Metrics Collected
+## Metrics Collected
 
 | Metric               | Description                                   |
 | -------------------- | --------------------------------------------- |
@@ -53,18 +53,43 @@ Client Requests
 
 ---
 
-## 🛠️ Usage
+## Usage
 
-To run experiments, use the command line runner with an experiment configuration:
+### Installation
+
+First, ensure you have Python 3.11+ installed. You can install the package and its dependencies using:
+
+```bash
+pip install -e .
+```
+
+### Running the Project
+
+SplitBrain provides a CLI (Command Line Interface) through `runner.py`.
+
+#### 1. Run a Single Experiment
+
+To run an experiment based on a specific configuration file:
 
 ```bash
 python runner.py run-experiment --config experiments/configs/high_latency.yaml
 ```
 
-This will run the simulation and generate visualizations for all three consistency models.
+This will run the simulation, output summary tables to the terminal, and generate visualization plots for all consistency models in `experiments/results/`.
+
+
+#### 2. Compare Multiple Experiments
+
+To run multiple experiments sequentially:
+
+```bash
+python runner.py compare --configs experiments/configs/config1.yaml --configs experiments/configs/config2.yaml
+```
+
+
 
 ---
 
-## 📜 License
+## License
 
 MIT License

@@ -43,13 +43,11 @@ class Node:
 
     def _handle_write_req(self, message: Message):
         """Handle a write request from the coordinator."""
-        # Using the coordinator's provided version (or timestamp) as the new version.
-        # Alternatively, the node could generate it, but usually the coordinator drives it.
-        # For our simulation, we'll let the coordinator dictate the new version to ensure consistency.
-        
-        # If the incoming version is strictly greater, update.
-        current_val, current_version = self._store.get(message.key, (None, 0))
+        current_val, current_version = self._store.get(message.key, (None, -1))
         if message.version > current_version:
+            self._store[message.key] = (message.value, message.version)
+        elif message.key not in self._store:
+            # Fallback if somehow version is -1 or something
             self._store[message.key] = (message.value, message.version)
         
         ack = Message(
