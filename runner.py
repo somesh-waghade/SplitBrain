@@ -3,6 +3,9 @@ import sys
 import yaml
 import click
 import random
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 from splitbrain.core.clock import SimulatedClock
 from splitbrain.core.engine import EventEngine
 from splitbrain.network.network import Network
@@ -15,7 +18,7 @@ from splitbrain.core.event import Event, EventType
 from splitbrain.metrics.metrics import MetricsEngine, RequestRecord
 from splitbrain.viz.plotter import Plotter
 
-def run_simulation(config_path: str):
+def run_simulation(config_path: str) -> pd.DataFrame:
     """Run a single experiment config."""
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
@@ -146,12 +149,49 @@ def run_simulation(config_path: str):
     print("\n--- Results ---")
     summary = metrics.summary_table()
     print(summary.to_string(index=False))
-    
+
     # Generate plots
     out_dir = os.path.join("experiments", "results", exp_name)
     plotter = Plotter(metrics, out_dir)
     plotter.save_all()
     print(f"\nPlots saved to {out_dir}/")
+
+    # Tag each row with the experiment name and return for compare
+    summary.insert(0, "Experiment", exp_name)
+    return summary
+
+def _save_comparison_plots(df: pd.DataFrame, out_dir: str):
+    """Generate grouped bar charts comparing experiments across consistency models."""
+    experiments = df["Experiment"].unique()
+    models = df["Model"].unique()
+    x = np.arange(len(models))
+    width = 0.8 / len(experiments)
+
+    metrics_to_plot = [
+        ("Availability (%)", "Availability by Model Across Experiments", "Availability (%)"),
+        ("Latency (mean)", "Mean Latency by Model Across Experiments", "Latency (ms)"),
+        ("Stale Reads (%)", "Stale Read Rate by Model Across Experiments", "Stale Reads (%)"),
+    ]
+
+    for col, title, ylabel in metrics_to_plot:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        for i, exp in enumerate(experiments):
+            exp_df = df[df["Experiment"] == exp].set_index("Model")
+            values = [exp_df.loc[m, col] if m in exp_df.index else 0 for m in models]
+            bars = ax.bar(x + i * width, values, width, label=exp)
+            for bar in bars:
+                h = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width() / 2, h, f"{h:.1f}", ha="center", va="bottom", fontsize=8)
+
+        ax.set_title(title)
+        ax.set_ylabel(ylabel)
+        ax.set_xticks(x + width * (len(experiments) - 1) / 2)
+        ax.set_xticklabels(models)
+        ax.legend()
+        ax.grid(axis="y", linestyle="--", alpha=0.5)
+        filename = col.lower().replace(" ", "_").replace("(%)", "pct").replace("(", "").replace(")", "").strip("_") + ".png"
+        fig.savefig(os.path.join(out_dir, filename), bbox_inches="tight")
+        plt.close(fig)
 
 @click.group()
 def cli():
@@ -167,10 +207,28 @@ def run_experiment(config):
 @cli.command()
 @click.option('--configs', multiple=True, required=True, type=click.Path(exists=True), help='Paths to config YAMLs.')
 def compare(configs):
-    """Run multiple experiments and compare them (Not implemented fully yet, runs them sequentially)."""
+    """Run multiple experiments and generate a side-by-side comparison report."""
+    all_summaries = []
     for config in configs:
-        run_simulation(config)
+        summary = run_simulation(config)
+        all_summaries.append(summary)
         print("-" * 40)
+
+    if len(all_summaries) < 2:
+        print("\nNeed at least 2 experiments to compare.")
+        return
+
+    combined = pd.concat(all_summaries, ignore_index=True)
+
+    print("\n========== COMPARISON SUMMARY ==========")
+    print(combined.to_string(index=False))
+    print("=========================================\n")
+
+    # Save comparison plots
+    out_dir = os.path.join("experiments", "results", "comparison")
+    os.makedirs(out_dir, exist_ok=True)
+    _save_comparison_plots(combined, out_dir)
+    print(f"Comparison plots saved to {out_dir}/")
 
 if __name__ == '__main__':
     cli()
